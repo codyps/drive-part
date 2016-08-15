@@ -1,0 +1,9 @@
+[package]
+name = "partition"
+version = "0.1.0"
+authors = ["Cody P Schafer <dev@codyps.com>"]
+license = "LGPL"
+include = ["Cargo.toml", "**/*.rs" ] 
+
+[dependencies]
+io-block = { path = "../io-block", version = "*" }
