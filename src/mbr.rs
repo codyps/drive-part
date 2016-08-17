@@ -4,11 +4,19 @@
 use std::{time};
 use std::convert::{From,Into};
 use io_at;
+use io_at::{WriteAt,ReadAt};
+use io_block::{BlockSize};
 
+#[derive(Clone)]
 struct MbrPart;
+
+#[derive(Clone,PartialEq,Eq)]
+enum MbrBuilderError {
+}
 
 /// Allows creating and commiting a new MBR to a WriteAt-able BlockSize-able thing (typically, a
 /// block device).
+#[derive(Clone)]
 struct MbrBuilder {
     bootcode: Option<Vec<u8>>,
     bootcode_2: Option<Vec<u8>>,
@@ -21,7 +29,7 @@ struct MbrBuilder {
 impl MbrBuilder {
     // TODO: consider determining presense of data prior to writing
     pub fn new() -> Self {
-        MbrWriter {
+        MbrBuilder {
             bootcode: None,
             bootcode_2: None,
             partitions: None,
@@ -41,7 +49,7 @@ impl MbrBuilder {
     ///
     ///  - if code.len() is too long for the type of MBR being constructed.
     pub fn set_bootcode(self, code: &[u8]) -> Self {
-        unimplimented!();
+        unimplemented!();
         self
     }
 
@@ -51,7 +59,7 @@ impl MbrBuilder {
     ///
     /// This is entirely optional (and probably unlikely to be used
     pub fn set_timestamp(self, ts: time::SystemTime) -> Self {
-        unimplimented!();
+        unimplemented!();
         self
     }
 
@@ -59,7 +67,7 @@ impl MbrBuilder {
     ///
     /// `drv` is intended to be a BIOS drive number (0x80 to 0xFF).
     pub fn set_original_physical_drive(self, drv: u8) -> Self {
-        unimplimented!();
+        unimplemented!();
         self
     }
 
@@ -68,7 +76,7 @@ impl MbrBuilder {
     ///
     /// This sets the second part of the bootcode.
     pub fn set_bootcode_part2(self, code: &[u8]) -> Self {
-        unimplimented!();
+        unimplemented!();
         self
     }
 
@@ -81,21 +89,21 @@ impl MbrBuilder {
     /// Adding this element shrinks the 2nd bootcode part (`set_bootcode_part2()`) as it occupies
     /// space at bootcode_part2's end.
     pub fn set_disk_signature(self, sig: u32, extra: u16) -> Self {
-        unimplimented!();
+        unimplemented!();
         self
     }
 
     /// Confirm that the MBR specified by our building is buildable, and convert it into a
     /// MbrWriter which may be used to commit the MBR to disk
-    pub fn compile(&self) -> Result<MbrWriter, MbrBuilderError> {
-        unimplimented!();
-        Ok(MbrWriter {})
+    pub fn compile(self) -> Result<MbrWriter, MbrBuilderError> {
+        unimplemented!();
+        Ok(MbrWriter { inner: self })
     }
 }
 
 /// A MBR specification that may be directly commited to a device.
 struct MbrWriter {
-    data: [u8;512],
+    inner: MbrBuilder,
 }
 
 impl MbrWriter {
@@ -106,7 +114,7 @@ impl MbrWriter {
     ///
     /// It is recommended that you ensure no unintended changes are made between read & commit.
     pub fn commit<T: WriteAt + BlockSize>(&self, back: T) -> io_at::Result<()> {
-        unimplimented!();
+        unimplemented!();
         Ok(())
     }
 
@@ -119,10 +127,11 @@ impl TryFrom<[u8;512]> for MbrReader {}
 */
 
 struct MbrReader<T: ReadAt + BlockSize> {
-    T: store,
+    store: T,
 }
 
 impl<T: ReadAt + BlockSize> MbrReader<T> {
     pub fn from_blockdev(back: T) -> Self {
+        MbrReader { store: back }
     }
 }

@@ -13,6 +13,9 @@
 //! Each partition-type also supports an ordering of a limited number of partitions. The maximum
 //! number of partitions varies with partition-type and other items.
 
+extern crate io_at;
+extern crate io_block;
+
 mod mbr;
 mod gpt;
 
