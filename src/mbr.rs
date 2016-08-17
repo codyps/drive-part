@@ -7,8 +7,32 @@ use io_at;
 use io_at::{WriteAt,ReadAt};
 use io_block::{BlockSize};
 
+/// Each partition spec (aka request) supplies a series of constraints that should be satisfied by
+/// the concrete (relealized, actual) partition. Convertion to a real partition is handled by
+/// `MbrBuilder::compile()`.
+///
 #[derive(Clone)]
-struct MbrPart;
+struct MbrPartSpec {
+
+}
+
+/// A physical (real) MBR partition with all associated attributes
+#[derive(Clone)]
+struct MbrPart {
+    number: u32,
+    start: u64,
+    end: u64
+}
+
+impl MbrPart {
+    pub fn is_primary(&self) -> bool {
+        self.number < 4
+    }
+
+    pub fn is_extended(&self) -> bool {
+        !self.is_primary()
+    }
+}
 
 #[derive(Clone,PartialEq,Eq)]
 enum MbrBuilderError {
