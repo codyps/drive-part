@@ -1,19 +1,72 @@
 /// MBR was publicly introduced in 1983 with PC DOS 2.0.
 ///
-
+/// This provides support only for original (basic) MBR layout and modern MBR layout.
+/// Support for Windows LDM and other MBR variants that depart from the basic structure may be
+/// supported elsewhere.
+///
+///
 use std::{time};
 use std::convert::{From,Into};
 use io_at;
 use io_at::{WriteAt,ReadAt};
 use io_block::{BlockSize};
 
+#[derive(Clone,PartialEq,Eq,Debug)]
+pub enum PartRef {
+    /** N partitions before this one. 0 is the current partition. 1 is the one immediately
+     * previous. */
+    Previous(u32),
+
+    /** N partitions after this one. 0 is the one immediately after. */
+    Next(u32),
+
+    /** Partition with number N. 0 is the first partition (all partitions are numbered from 0. */
+    Exact(u32),
+}
+
+#[derive(Clone,PartialEq,Eq,Debug)]
+pub enum LocSpec {
+    /** At the end of a partition */
+    AtEndOf(PartRef),
+
+    /** At the start of a partition */
+    AtStartOf(PartRef),
+
+    /*
+    /** Offset by N bytes from another location */
+    pub Offset(LocSpec, i64),
+
+    /** Align the location rounding to the next location divisible by N bytes */
+    pub AlignNext(LocSpec, u64),
+
+    /** Align the location rounding to the previous location divisible by N bytes */
+    pub AlignPrev(LocSpec, u64),
+    */
+}
+
+#[derive(Clone,PartialEq,Eq,Debug)]
+pub enum NumSpec {
+    Exact(u32),
+    /*
+    AfterPart(PartRef),
+    BeforePart(PartRef),
+    */
+}
+
+#[derive(Clone,PartialEq,Eq,Debug)]
+pub enum PartSpec {
+    Number(NumSpec),
+    Start(LocSpec),
+    End(LocSpec),
+    IsBootable
+}
+
 /// Each partition spec (aka request) supplies a series of constraints that should be satisfied by
 /// the concrete (relealized, actual) partition. Convertion to a real partition is handled by
 /// `MbrBuilder::compile()`.
-///
-#[derive(Clone)]
+#[derive(Clone,PartialEq,Eq,Debug)]
 struct MbrPartSpec {
-
+    specs: Vec<PartSpec>,
 }
 
 /// A physical (real) MBR partition with all associated attributes
