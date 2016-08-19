@@ -177,6 +177,12 @@ impl MbrBuilder {
         self
     }
 
+    /// Add a partition by specification
+    pub fn partition_add(mut self, spec: MbrPartSpec) -> Self {
+        unimplemented!();
+        self
+    }
+
     /// Confirm that the MBR specified by our building is buildable, and convert it into a
     /// MbrWriter which may be used to commit the MBR to disk
     pub fn compile(self) -> Result<MbrWriter, MbrBuilderError> {
