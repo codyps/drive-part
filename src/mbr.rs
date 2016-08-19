@@ -100,7 +100,7 @@ struct MbrBuilder {
     partitions: Option<Vec<MbrPart>>,
     timestamp: Option<time::SystemTime>,
     original_physical_drive: Option<u8>,
-    disk_sig: Option<u8>,
+    disk_sig: Option<(u32,u16)>,
 }
 
 impl MbrBuilder {
@@ -125,8 +125,12 @@ impl MbrBuilder {
     /// Panics:
     ///
     ///  - if code.len() is too long for the type of MBR being constructed.
-    pub fn set_bootcode(self, code: &[u8]) -> Self {
-        unimplemented!();
+    pub fn set_bootcode(mut self, code: &[u8]) -> Self {
+        if code.len() > 446 {
+            panic!("Bootcode must be at most 446 bytes long, got {} bytes", code.len())
+        }
+
+        self.bootcode = Some(code.to_owned());
         self
     }
 
@@ -135,16 +139,16 @@ impl MbrBuilder {
     /// NEWLDR.
     ///
     /// This is entirely optional (and probably unlikely to be used
-    pub fn set_timestamp(self, ts: time::SystemTime) -> Self {
-        unimplemented!();
+    pub fn set_timestamp(mut self, ts: time::SystemTime) -> Self {
+        self.timestamp = Some(ts);
         self
     }
 
     /// Considered a piece of the timestamp set by `set_timestamp()`
     ///
     /// `drv` is intended to be a BIOS drive number (0x80 to 0xFF).
-    pub fn set_original_physical_drive(self, drv: u8) -> Self {
-        unimplemented!();
+    pub fn set_original_physical_drive(mut self, drv: u8) -> Self {
+        self.original_physical_drive = Some(drv);
         self
     }
 
@@ -152,8 +156,11 @@ impl MbrBuilder {
     /// at +224 bytes.
     ///
     /// This sets the second part of the bootcode.
-    pub fn set_bootcode_part2(self, code: &[u8]) -> Self {
-        unimplemented!();
+    pub fn set_bootcode_part2(mut self, code: &[u8]) -> Self {
+        if code.len() > 222 {
+            panic!("Bootcode #2 must be at most 222 bytes long, was {} bytes", code.len());
+        }
+        self.bootcode_2 = Some(code.to_owned());
         self
     }
 
@@ -165,8 +172,8 @@ impl MbrBuilder {
     ///
     /// Adding this element shrinks the 2nd bootcode part (`set_bootcode_part2()`) as it occupies
     /// space at bootcode_part2's end.
-    pub fn set_disk_signature(self, sig: u32, extra: u16) -> Self {
-        unimplemented!();
+    pub fn set_disk_signature(mut self, sig: u32, extra: u16) -> Self {
+        self.disk_sig = Some((sig, extra));
         self
     }
 
