@@ -6,7 +6,7 @@
 ///
 ///
 use std::{time};
-use std::convert::{From,Into};
+//use std::convert::{From,Into};
 use io_at;
 use io_at::{WriteAt,ReadAt};
 use io_block::{BlockSize};
@@ -65,13 +65,13 @@ pub enum PartSpec {
 /// the concrete (relealized, actual) partition. Convertion to a real partition is handled by
 /// `MbrBuilder::compile()`.
 #[derive(Clone,PartialEq,Eq,Debug)]
-struct MbrPartSpec {
+pub struct MbrPartSpec {
     specs: Vec<PartSpec>,
 }
 
 /// A physical (real) MBR partition with all associated attributes
 #[derive(Clone)]
-struct MbrPart {
+pub struct MbrPart {
     number: u32,
     start: u64,
     end: u64
@@ -88,13 +88,13 @@ impl MbrPart {
 }
 
 #[derive(Clone,PartialEq,Eq)]
-enum MbrBuilderError {
+pub enum MbrBuilderError {
 }
 
 /// Allows creating and commiting a new MBR to a WriteAt-able BlockSize-able thing (typically, a
 /// block device).
 #[derive(Clone)]
-struct MbrBuilder {
+pub struct MbrBuilder {
     bootcode: Option<Vec<u8>>,
     bootcode_2: Option<Vec<u8>>,
     partitions: Option<Vec<MbrPart>>,
@@ -192,7 +192,7 @@ impl MbrBuilder {
 }
 
 /// A MBR specification that may be directly commited to a device.
-struct MbrWriter {
+pub struct MbrWriter {
     inner: MbrBuilder,
 }
 
@@ -207,7 +207,6 @@ impl MbrWriter {
         unimplemented!();
         Ok(())
     }
-
 }
 
 /*
