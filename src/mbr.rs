@@ -89,6 +89,8 @@ impl MbrPart {
 
 #[derive(Clone,PartialEq,Eq)]
 pub enum MbrBuilderError {
+    BootcodeOversized(usize),
+    Bootcode2Oversized(usize)
 }
 
 /// Allows creating and commiting a new MBR to a WriteAt-able BlockSize-able thing (typically, a
@@ -97,7 +99,7 @@ pub enum MbrBuilderError {
 pub struct MbrBuilder {
     bootcode: Option<Vec<u8>>,
     bootcode_2: Option<Vec<u8>>,
-    partitions: Option<Vec<MbrPart>>,
+    partitions: Vec<MbrPartSpec>,
     timestamp: Option<time::SystemTime>,
     original_physical_drive: Option<u8>,
     disk_sig: Option<(u32,u16)>,
@@ -109,7 +111,7 @@ impl MbrBuilder {
         MbrBuilder {
             bootcode: None,
             bootcode_2: None,
-            partitions: None,
+            partitions: vec![],
             timestamp: None,
             original_physical_drive: None,
             disk_sig: None
@@ -179,14 +181,33 @@ impl MbrBuilder {
 
     /// Add a partition by specification
     pub fn partition_add(mut self, spec: MbrPartSpec) -> Self {
-        unimplemented!();
+        self.partitions.push(spec);
         self
+    }
+
+    fn is_modern(&self) -> bool {
+        self.bootcode_2.is_some() ||
+            self.original_physical_drive.is_some() ||
+            self.timestamp.is_some() ||
+            self.disk_sig.is_some()
     }
 
     /// Confirm that the MBR specified by our building is buildable, and convert it into a
     /// MbrWriter which may be used to commit the MBR to disk
     pub fn compile(self) -> Result<MbrWriter, MbrBuilderError> {
-        unimplemented!();
+        if self.is_modern() {
+            let l = self.bootcode.as_ref().map_or(0, |x| x.len());
+            if l > 226 {
+                return Err(MbrBuilderError::BootcodeOversized(l));
+            }
+            let l = self.bootcode_2.as_ref().map_or(0, |x| x.len());
+            if self.disk_sig.is_some() && l > 216 {
+                return Err(MbrBuilderError::Bootcode2Oversized(l));
+            }
+        }
+
+        /* TODO: confirm that partition specification is valid */
+
         Ok(MbrWriter { inner: self })
     }
 }
@@ -197,6 +218,11 @@ pub struct MbrWriter {
 }
 
 impl MbrWriter {
+    /// This mbr has modern features included in it.
+    pub fn is_modern(&self) -> bool {
+        self.inner.is_modern()
+    }
+
     /// Commit the MBR we've built up here to a backing store.
     ///
     /// Note that no attempt to preseve the existing contents of the backing store will be made by
@@ -215,7 +241,7 @@ impl From<MbrReader> for MbrBuilder {}
 impl TryFrom<[u8;512]> for MbrReader {}
 */
 
-struct MbrReader<T: ReadAt + BlockSize> {
+pub struct MbrReader<T: ReadAt + BlockSize> {
     store: T,
 }
 

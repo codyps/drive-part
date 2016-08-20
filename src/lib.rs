@@ -16,8 +16,8 @@
 extern crate io_at;
 extern crate io_block;
 
-mod mbr;
-mod gpt;
+pub mod mbr;
+pub mod gpt;
 
 #[cfg(test)]
 mod tests {
