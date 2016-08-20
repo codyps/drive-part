@@ -69,6 +69,17 @@ pub struct MbrPartSpec {
     specs: Vec<PartSpec>,
 }
 
+impl MbrPartSpec {
+    pub fn is_bootable(&self) -> bool {
+        for s in self.specs.iter() {
+            if let &PartSpec::IsBootable = s {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 /// A physical (real) MBR partition with all associated attributes
 #[derive(Clone)]
 pub struct MbrPart {
@@ -90,7 +101,8 @@ impl MbrPart {
 #[derive(Clone,PartialEq,Eq)]
 pub enum MbrBuilderError {
     BootcodeOversized(usize),
-    Bootcode2Oversized(usize)
+    Bootcode2Oversized(usize),
+    MoreThan1Bootable,
 }
 
 /// Allows creating and commiting a new MBR to a WriteAt-able BlockSize-able thing (typically, a
@@ -192,6 +204,21 @@ impl MbrBuilder {
             self.disk_sig.is_some()
     }
 
+    fn partition_check(&self) -> Result<(),MbrBuilderError> {
+        let mut fb = false;
+        for p in self.partitions.iter() {
+            /* only 1 bootable partition is allowed */
+            if p.is_bootable() {
+                if fb {
+                    return Err(MbrBuilderError::MoreThan1Bootable)
+                }
+                fb = true;
+            }
+        }
+
+        Ok(())
+    }
+
     /// Confirm that the MBR specified by our building is buildable, and convert it into a
     /// MbrWriter which may be used to commit the MBR to disk
     pub fn compile(self) -> Result<MbrWriter, MbrBuilderError> {
@@ -230,6 +257,11 @@ impl MbrWriter {
     ///
     /// It is recommended that you ensure no unintended changes are made between read & commit.
     pub fn commit<T: WriteAt + BlockSize>(&self, back: T) -> io_at::Result<()> {
+        /* 1. Confirm that given the size of the device, the requested partition specs result in an
+         *    allowed layout (ie: they need to fit)
+         */
+
+
         unimplemented!();
         Ok(())
     }
