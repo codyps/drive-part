@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Cody P Schafer <dev@codyps.com>"]
 license = "LGPL"
 include = ["Cargo.toml", "**/*.rs" ]
+keywords = ["gpt", "mbr", "partition", "disk", "drive"]
 
 [dependencies]
 io-block = "0.1"
