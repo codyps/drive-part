@@ -9,3 +9,4 @@ keywords = ["gpt", "mbr", "partition", "disk", "drive"]
 [dependencies]
 io-block = "0.1"
 io-at = "0.4"
+index-fixed = "*"

@@ -1,16 +1,9 @@
-/// MBR was publicly introduced in 1983 with PC DOS 2.0.
-///
-/// This provides support only for original (basic) MBR layout and modern MBR layout.
-/// Support for Windows LDM and other MBR variants that depart from the basic structure may be
-/// supported elsewhere.
-///
-///
 use std::{time};
-//use std::convert::{From,Into};
-use io_at;
-use io_at::{WriteAt,ReadAt};
 use io_block::{BlockSize};
+use io_at;
+use io_at::{WriteAt};
 
+/// Identify another partition by it's relative or absolute index
 #[derive(Clone,PartialEq,Eq,Debug)]
 pub enum PartRef {
     /** N partitions before this one. 0 is the current partition. 1 is the one immediately
@@ -24,6 +17,7 @@ pub enum PartRef {
     Exact(u32),
 }
 
+/// "Partition edge should be located [X]"
 #[derive(Clone,PartialEq,Eq,Debug)]
 pub enum LocSpec {
     /** At the end of a partition */
@@ -44,15 +38,15 @@ pub enum LocSpec {
     */
 }
 
+/// "Partition index should be [X]"
 #[derive(Clone,PartialEq,Eq,Debug)]
 pub enum NumSpec {
     Exact(u32),
-    /*
     AfterPart(PartRef),
     BeforePart(PartRef),
-    */
 }
 
+/// Requirements that can be applied to a given partition
 #[derive(Clone,PartialEq,Eq,Debug)]
 pub enum PartSpec {
     Number(NumSpec),
@@ -82,13 +76,14 @@ impl MbrPartSpec {
 
 /// A physical (real) MBR partition with all associated attributes
 #[derive(Clone)]
-pub struct MbrPart {
+pub struct MbrPhysPart {
     number: u32,
     start: u64,
-    end: u64
+    end: u64,
+    bootable: bool,
 }
 
-impl MbrPart {
+impl MbrPhysPart {
     pub fn is_primary(&self) -> bool {
         self.number < 4
     }
@@ -102,6 +97,9 @@ impl MbrPart {
 pub enum MbrBuilderError {
     BootcodeOversized(usize),
     Bootcode2Oversized(usize),
+    OriginalPhysDriveOverlapped,
+    DiskSigOverlapped,
+    BootCodeOverlapped(usize, usize),
     MoreThan1Bootable,
 }
 
@@ -222,15 +220,23 @@ impl MbrBuilder {
     /// Confirm that the MBR specified by our building is buildable, and convert it into a
     /// MbrWriter which may be used to commit the MBR to disk
     pub fn compile(self) -> Result<MbrWriter, MbrBuilderError> {
-        if self.is_modern() {
-            let l = self.bootcode.as_ref().map_or(0, |x| x.len());
-            if l > 226 {
-                return Err(MbrBuilderError::BootcodeOversized(l));
-            }
-            let l = self.bootcode_2.as_ref().map_or(0, |x| x.len());
-            if self.disk_sig.is_some() && l > 216 {
-                return Err(MbrBuilderError::Bootcode2Oversized(l));
-            }
+        let b1 = self.bootcode.as_ref().map_or(0, |x| x.len());
+        let b2 = self.bootcode_2.as_ref().map_or(0, |x| x.len());
+
+        if self.original_physical_drive.is_some() && b1 > 218 {
+            return Err(MbrBuilderError::OriginalPhysDriveOverlapped)
+        }
+
+        if self.timestamp.is_some() && b1 > 221 {
+            return Err(MbrBuilderError::BootcodeOversized(b1));
+        }
+
+        if self.disk_sig.is_some() && (b1 > 440 || b2 > 216) {
+            return Err(MbrBuilderError::DiskSigOverlapped);
+        }
+
+        if b2 > 0 && b1 > 224 {
+            return Err(MbrBuilderError::BootCodeOverlapped(b1, b2));
         }
 
         /* TODO: confirm that partition specification is valid */
@@ -264,21 +270,5 @@ impl MbrWriter {
 
         unimplemented!();
         Ok(())
-    }
-}
-
-/*
-impl From<MbrReader> for MbrWriter {}
-impl From<MbrReader> for MbrBuilder {}
-impl TryFrom<[u8;512]> for MbrReader {}
-*/
-
-pub struct MbrReader<T: ReadAt + BlockSize> {
-    store: T,
-}
-
-impl<T: ReadAt + BlockSize> MbrReader<T> {
-    pub fn from_blockdev(back: T) -> Self {
-        MbrReader { store: back }
     }
 }

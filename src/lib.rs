@@ -16,6 +16,9 @@
 extern crate io_at;
 extern crate io_block;
 
+#[macro_use]
+extern crate index_fixed;
+
 pub mod mbr;
 pub mod gpt;
 
