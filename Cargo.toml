@@ -7,6 +7,6 @@ include = ["Cargo.toml", "**/*.rs" ]
 keywords = ["gpt", "mbr", "partition", "disk", "drive"]
 
 [dependencies]
-io-block = "0.1"
+io-block = "0.2"
 io-at = "0.4"
 index-fixed = "*"
